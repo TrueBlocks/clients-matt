@@ -14,5 +14,9 @@ mac:
 	mv ./libmatt.dylib ~/Library/Application\ Support/TrueBlocks/cache/objs/
 
 linux:
-	g++ $(cflags) -fPIC -shared -o libmatt.so $(libraries)/*.a matt.cpp
-	mv ./libmatt.so ~/.local/share/trueblocks/cache/objs/
+	@echo "Temporarily disabled - check back later"
+
+save:
+	@echo "Temporarily disabled - check back later"
+	@echo g++ $(cflags) -fPIC -shared -o libmatt.so $(libraries)/*.a matt.cpp
+	@echo mv ./libmatt.so ~/.local/share/trueblocks/cache/objs/
