@@ -8,6 +8,10 @@ class CMattTraverser : public CTraverser {
     // In this example, we do not use this derived class from the
     // CTraverser class. We could use this class to accumulate custom
     // data during the traversal such as summaries, totals, averages, etc.
+public:
+  bigint_t maxDiff = str_2_BigInt("200000000000000000000000000");
+  bigint_t minDiff = NOPOS;
+  bigint_t prevVal = 0;
   public:
     CMattTraverser(void) : CTraverser(cout, "matt") {
     }
@@ -19,11 +23,13 @@ class CMattTraverser : public CTraverser {
 // `init`, and we use the function to display the field list in the header
 // of the generated data.
 bool init(CTraverser* trav, void* data) {
-    cout << "block\t";
-    cout << "txid\t";
-    cout << "date\t";
-    cout << "address\t";
-    cout << "exchangeRateStored" << endl;
+    cout << "block,";
+    cout << "txid,";
+    cout << "date,";
+    cout << "exchangeRateStored,";
+    cout << "curDiff,";
+    cout << "minDiff,";
+    cout << "maxDiff" << endl;
     return true;
 }
 
@@ -43,10 +49,27 @@ bool visit(CTraverser* trav, void* data) {
     theCall.abi_spec.loadAbiFromEtherscan(compoundAddr);
     doEthCall(theCall);
 
-    cout << trav->trans.blockNumber << "\t";
-    cout << trav->trans.transactionIndex << "\t";
-    cout << trav->trans.Format("[{DATE}]") << "\t";
-    cout << theCall.getResults() << endl;
+    CMattTraverser *mt = (CMattTraverser*)trav;
+
+    bigint_t curVal = str_2_Wei(theCall.getResults());
+    bigint_t curDiff = curVal - mt->prevVal;
+    if (curDiff > mt->maxDiff)
+        mt->maxDiff = curDiff;
+    if (curDiff < mt->minDiff)
+        mt->minDiff = curDiff;
+
+    mt->prevVal = curVal;
+    if (mt->index == 0) {
+        curVal = curDiff = 0;
+    }
+
+    cout << mt->trans.blockNumber << ",";
+    cout << mt->trans.transactionIndex << ",";
+    cout << mt->trans.Format("[{DATE}]") << ",";
+    cout << curVal << ",";
+    cout << curDiff << ",";
+    cout << mt->minDiff << ",";
+    cout << mt->maxDiff << endl;
 
     return true;
 }
