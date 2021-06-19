@@ -1,6 +1,6 @@
 # Custom Taverser for Compound
 
-## Introduciton
+## Introduction
 
 This is an example of using TrueBlocks to query a very specific value from a smart contract after every transaction that that smart contract was involved in.
 
