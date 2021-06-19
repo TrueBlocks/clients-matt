@@ -41,12 +41,15 @@ bool visit(CTraverser* trav, void* data) {
     theCall.abi_spec.loadAbiFromEtherscan(trav->curMonitor->address);
     doEthCall(theCall);
 
-    cout << "\"" << colorMap[trav->curMonitor->address] << trav->curMonitor->address << cOff << "\",";
-    cout << "\"" << trav->trans.blockNumber << "\",";
-    cout << "\"" << trav->trans.transactionIndex << "\",";
-    cout << "\"" << trav->trans.Format("[{DATE}]") << "\",";
-    cout << "\"" << str_2_Wei(theCall.getResults()) << "\"";
-    cout << endl;
+    ostringstream os;
+    os << "\"" << colorMap[trav->curMonitor->address] << trav->curMonitor->address << cOff << "\",";
+    os << "\"" << trav->trans.blockNumber << "\",";
+    os << "\"" << trav->trans.transactionIndex << "\",";
+    os << "\"" << trav->trans.Format("[{DATE}]") << "\",";
+    os << "\"" << str_2_Wei(theCall.getResults()) << "\"";
+    os << endl;
+    appendToAsciiFile("./" + trav->curMonitor->address + ".txt", os.str());
+    cout << os.str();
 
     return true;
 }
