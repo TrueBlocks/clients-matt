@@ -1,0 +1,7 @@
+[settings]
+base_class = CTransaction
+class = CPricePerShare
+fields = address address|\
+        wei pricePerShare
+display_str = address,blockNumber,transactionIndex,date,pricePerShare
+includes = etherlib.h

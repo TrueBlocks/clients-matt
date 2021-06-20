@@ -4,52 +4,89 @@
  * All Rights Reserved
  *------------------------------------------------------------------------*/
 #include "acctlib.h"
+#include "pricepershare.h"
 
+map<address_t, bool> headerMap;
+map<address_t, blknum_t> lastBlockMap;
 //-----------------------------------------------------------------------
 class CMattTraverser : public CTraverser {
 public:
+    bool reported = false;
     CMattTraverser(void) : CTraverser(cout, "matt") {
+        CMonitor::registerClass();
     }
 };
 
 //------------------------------------------------------------------------------------------------
-map<address_t, string> colorMap = {
-    {"0x5f18c75abdae578b483e5f43f12a39cf75b973a9", bRed},
-    {"0x19d3364a399d251e894ac732651be8b0e4e85001", bGreen},
-    {"0xa258c4606ca8206d8aa700ce2143d7db854d168c", bYellow},
-    {"0xa696a63cc78dffa1a63e9e50587c197387ff6c7e", bBlue},
-};
-
-//------------------------------------------------------------------------------------------------
 bool init(CTraverser* trav, void* data) {
-    cout << "address,";
-    cout << "block,";
-    cout << "txid,";
-    cout << "date,";
-    cout << "pricePerShare";
-    cout << endl;
+    CMattTraverser *mt = (CMattTraverser*)trav;
+    if (!mt->reported) {
+        for (auto item : trav->monitorMap) {
+            CMonitor monitor = item.second;
+            string_q res = monitor.Format("Reporting on [{ADDRESS}]\t[{NAME}]");
+            cerr << res << endl;
+        }
+        mt->reported = true;
+    }
     return true;
 }
 
 //------------------------------------------------------------------------------------------------
 bool visit(CTraverser* trav, void* data) {
-    CEthCall theCall;
-    theCall.address = trav->curMonitor->address;
-    theCall.encoding = "0x99530b06";
-    theCall.bytes = "";
-    theCall.blockNumber = trav->trans.blockNumber;
-    theCall.abi_spec.loadAbiFromEtherscan(trav->curMonitor->address);
-    doEthCall(theCall);
+    CMattTraverser *mt = (CMattTraverser*)trav;
+    CPricePerShare share = mt->trans;
+    share.address = mt->curMonitor->address;
 
-    ostringstream os;
-    os << "\"" << colorMap[trav->curMonitor->address] << trav->curMonitor->address << cOff << "\",";
-    os << "\"" << trav->trans.blockNumber << "\",";
-    os << "\"" << trav->trans.transactionIndex << "\",";
-    os << "\"" << trav->trans.Format("[{DATE}]") << "\",";
-    os << "\"" << str_2_Wei(theCall.getResults()) << "\"";
-    os << endl;
-    appendToAsciiFile("./" + trav->curMonitor->address + ".txt", os.str());
-    cout << os.str();
+    if (!headerMap[mt->curMonitor->address]) {
+        headerMap[mt->curMonitor->address] = true;
+
+        CPricePerShare share;
+        cout << toLower(share.Format(substitute(substitute(STR_DISPLAY_PRICEPERSHARE, "{", "{p:"), "\t", ","))) << endl;
+
+        string_q fileName = "./" + mt->curMonitor->address + ".txt";
+        if (fileExists(fileName)) {
+            string_q orig = asciiFileToString(fileName);
+            string_q content = orig;
+            CStringArray lines;
+            explode(lines, content, '\n');
+            string_q lastLine = lines[lines.size() - 1];
+            cout << lastLine << endl;
+            lastLine = lastLine.substr(lastLine.find(",")+1);
+            cout << lastLine << endl;
+            lastLine = lastLine.substr(lastLine.find("\"")+1);
+            cout << lastLine << endl;
+            lastBlockMap[mt->curMonitor->address] = str_2_Uint(lastLine);
+            cout << orig;
+        }
+    }
+
+    if (mt->trans.blockNumber <= lastBlockMap[mt->curMonitor->address]) {
+        cerr << mt->trans.blockNumber << "." << mt->trans.transactionIndex << "    \r";
+        cerr.flush();
+        // getchar();
+        return true;
+    }
+
+    string_q res = share.Format(STR_DISPLAY_PRICEPERSHARE);
+    cerr << res << endl;
+
+    // CEthCall theCall;
+    // theCall.address = trav->curMonitor->address;
+    // theCall.encoding = "0x99530b06";
+    // theCall.bytes = "";
+    // theCall.blockNumber = trav->trans.blockNumber;
+    // theCall.abi_spec.loadAbiFromEtherscan(trav->curMonitor->address);
+    // doEthCall(theCall);
+
+    // ostringstream os;
+    // os << "\"" << colorMap[trav->curMonitor->address] << trav->curMonitor->address << cOff << "\",";
+    // os << "\"" << trav->trans.blockNumber << "\",";
+    // os << "\"" << trav->trans.transactionIndex << "\",";
+    // os << "\"" << trav->trans.Format("[{DATE}]") << "\",";
+    // os << "\"" << str_2_Wei(theCall.getResults()) << "\"";
+    // os << endl;
+    // appendToAsciiFile("./" + trav->curMonitor->address + ".txt", os.str());
+    // cout << os.str();
 
     return true;
 }
